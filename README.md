@@ -1,2 +1,2 @@
 - Developed a Python based calculator to follow the BODMAS principle, ensuring precise parsing and calculation
-- - Created a *Custom Stack* class to facilitate evaluation of complex expressions with multiple operators and nested brackets
+- Created a *Custom Stack* class to facilitate evaluation of complex expressions with multiple operators and nested brackets
