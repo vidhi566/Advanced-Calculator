@@ -1,0 +1,172 @@
+class SimpleCalculator:
+    def __init__(self):
+        self.operators = ['+', '-', '*', '/']
+        self.history = []
+
+    def evaluate_expression(self, expression):
+        expression = expression.replace(' ', '')
+        if not self.is_valid(expression):
+            return "Error"
+        operator = None
+        operand = []
+        for op in self.operators:
+            if op in expression:
+                operator = op
+                operand = expression.split(operator)
+        if len(operand) != 2:
+            return "Error"
+        num1 = int(operand[0])
+        num2 = int(operand[1])
+        result = None
+        if operator == '+':
+            result = num1 + num2
+        elif operator == '-':
+            result = num1 - num2
+        elif operator == '*':
+            result = num1 * num2
+        elif operator == '/':
+            if num2 == 0:
+                return "Error"
+            result = num1 / num2
+        self.history.append((expression, result))
+        return result
+
+    def is_valid(self, expression):
+        if len(expression) < 3:
+            return False
+        operator_count = 0
+        operands = []
+        for e in expression:
+            if e in self.operators:
+                operator_count += 1
+                operands = expression.split(e)
+        return operator_count == 1 and len(operands) == 2
+
+    def get_history(self):
+        return self.history
+
+
+class Stack:
+    def __init__(self):
+        self.stack = []
+
+    def push(self, item):
+        self.stack.append(item)
+
+    def peek(self):
+        if len(self.stack) == 0:
+            return "Error"
+        return self.stack[-1]
+
+    def pop(self):
+        if len(self.stack) == 0:
+            return "Error"
+        return self.stack.pop()
+
+    def is_empty(self):
+        return len(self.stack) == 0
+
+    def __str__(self):
+        return " ".join(map(str, reversed(self.stack)))
+
+    def __len__(self):
+        return len(self.stack)
+
+
+class AdvancedCalculator(SimpleCalculator):
+    def __init__(self):
+        super().__init__()
+        self.open_brackets = ['(', '{']
+        self.close_brackets = [')', '}']
+
+    def evaluate_expression(self, input_expression):
+        tokens = self.tokenize(input_expression)
+        if self.check_brackets(tokens):
+            result = self.evaluate_list_tokens(tokens)
+            self.history.append((input_expression, result))
+            return result
+        else:
+            self.history.append((input_expression, "Error"))
+            return "Error"
+
+    def tokenize(self, input_expression):
+        input_expression = input_expression.replace(' ', '')
+        tokens = []
+        num = ""
+        for char in input_expression:
+            if char.isdigit():
+                num += char
+            else:
+                if num:
+                    tokens.append(int(num))
+                    num = ""
+                tokens.append(char)
+        if num:
+            tokens.append(int(num))
+        return tokens
+
+    def check_brackets(self, tokens):
+        bracket_stack = Stack()
+        for token in tokens:
+            if token in self.open_brackets:
+                bracket_stack.push(token)
+            elif token in self.close_brackets:
+                if bracket_stack.is_empty():
+                    return False
+                top = bracket_stack.pop()
+                if self.open_brackets.index(top) != self.close_brackets.index(token):
+                    return False
+        return bracket_stack.is_empty()
+
+    def evaluate_list_tokens(self, tokens):
+        operator_stack = Stack()
+        operand_stack = Stack()
+
+        def apply_operator():
+            operator = operator_stack.pop()
+            right = operand_stack.pop()
+            left = operand_stack.pop()
+            if operator == '+':
+                operand_stack.push(left + right)
+            elif operator == '-':
+                operand_stack.push(left - right)
+            elif operator == '*':
+                operand_stack.push(left * right)
+            elif operator == '/':
+                if right == 0:
+                    raise ZeroDivisionError
+                operand_stack.push(left / right)
+
+        precedence = {'+': 1, '-': 1, '*': 2, '/': 2}
+        i = 0
+        while i < len(tokens):
+            token = tokens[i]
+            if isinstance(token, int):
+                operand_stack.push(token)
+            elif token in self.open_brackets:
+                operator_stack.push(token)
+            elif token in self.close_brackets:
+                while not operator_stack.is_empty() and operator_stack.peek() not in self.open_brackets:
+                    apply_operator()
+                operator_stack.pop()
+            else:
+                while (not operator_stack.is_empty() and operator_stack.peek() not in self.open_brackets and
+                       precedence[operator_stack.peek()] >= precedence[token]):
+                    apply_operator()
+                operator_stack.push(token)
+            i += 1
+
+        while not operator_stack.is_empty():
+            apply_operator()
+
+        result = operand_stack.pop()
+        return result
+
+    def get_history(self):
+        return self.history
+
+
+# Example usage
+adv = AdvancedCalculator()
+print(adv.evaluate_expression("2 + {3 - (4 * 2 + 1)}"))  # Should print -3.0
+print(adv.get_history())  # Should print the history list with valid expressions
